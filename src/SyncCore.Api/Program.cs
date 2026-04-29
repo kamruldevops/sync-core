@@ -39,14 +39,27 @@ builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
 
 // --- Authentication (Azure AD B2C) ---
-builder.Services
-    .AddMicrosoftIdentityWebApiAuthentication(builder.Configuration, "AzureAdB2C");
+var b2cClientId = builder.Configuration["AzureAdB2C:ClientId"];
+var b2cConfigured = !string.IsNullOrWhiteSpace(b2cClientId);
 
-// --- Authorization — require auth by default ---
-builder.Services.AddAuthorizationBuilder()
-    .SetFallbackPolicy(new AuthorizationPolicyBuilder()
+if (b2cConfigured)
+{
+    builder.Services
+        .AddMicrosoftIdentityWebApiAuthentication(builder.Configuration, "AzureAdB2C");
+}
+else
+{
+    builder.Services.AddAuthentication();
+}
+
+// --- Authorization — require auth by default (relaxed when B2C not configured) ---
+var authBuilder = builder.Services.AddAuthorizationBuilder();
+if (b2cConfigured)
+{
+    authBuilder.SetFallbackPolicy(new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build());
+}
 
 // --- CORS for local Vite dev server ---
 builder.Services.AddCors(options =>
