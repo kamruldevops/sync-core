@@ -11,7 +11,7 @@ export function PhotoThumbnail({ photo, onSelect }: Props) {
   const { mutate: toggle } = useToggleFavourite();
 
   return (
-    <div className="relative group aspect-square overflow-hidden bg-gray-100 cursor-pointer">
+    <div className="relative group h-full w-full overflow-hidden bg-gray-100 cursor-pointer">
       <Link to={`/photos/${photo.publicId}`} onClick={() => onSelect?.(photo.publicId)}>
         <img
           src={photo.thumbUrl}

@@ -1,11 +1,30 @@
 import { useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { usePhotos } from './api';
+import type { PhotoDto } from './types';
 import { PhotoThumbnail } from './PhotoThumbnail';
 import { UploadButton } from '../upload/UploadButton';
 
 interface Props {
   favouritesOnly?: boolean;
+}
+
+function formatDateLabel(isoDate: string): string {
+  // isoDate is YYYY-MM-DD; parse at noon local to avoid timezone day shift
+  const d = new Date(isoDate + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function groupByDate(photos: PhotoDto[]): { key: string; label: string; items: PhotoDto[] }[] {
+  const groups = new Map<string, PhotoDto[]>();
+  for (const photo of photos) {
+    const key = photo.takenAt.split('T')[0];
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(photo);
+  }
+  return Array.from(groups.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([key, items]) => ({ key, label: formatDateLabel(key), items }));
 }
 
 function EmptyState() {
@@ -86,6 +105,8 @@ export function GalleryPage({ favouritesOnly }: Props) {
     return <EmptyState />;
   }
 
+  const groups = groupByDate(photos);
+
   return (
     <div className="px-4 pt-2 pb-8">
       {searchTerm && (
@@ -94,12 +115,27 @@ export function GalleryPage({ favouritesOnly }: Props) {
         </p>
       )}
 
-      {/* Photo grid — tight gaps like Google Photos */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5">
-        {photos.map((photo) => (
-          <PhotoThumbnail key={photo.publicId} photo={photo} />
-        ))}
-      </div>
+      {groups.map(({ key, label, items }) => (
+        <div key={key} className="mb-2">
+          {/* Date header */}
+          <h2 className="text-sm font-medium text-gray-700 py-2 sticky top-0 bg-white z-10">{label}</h2>
+
+          {/* Justified flex layout — same row height, natural widths, fills container */}
+          <div className="flex flex-wrap gap-[3px]">
+            {items.map((photo) => (
+              <div
+                key={photo.publicId}
+                className="h-52 flex-grow overflow-hidden bg-gray-100"
+                style={{ flexBasis: '180px', maxWidth: '480px' }}
+              >
+                <PhotoThumbnail photo={photo} />
+              </div>
+            ))}
+            {/* Invisible spacer so last row items don't stretch too wide */}
+            <div className="flex-grow-[999]" style={{ flexBasis: '180px', maxWidth: '480px' }} />
+          </div>
+        </div>
+      ))}
 
       <div ref={sentinelRef} className="h-4" />
       {isFetchingNextPage && (

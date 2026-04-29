@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useUploadPhoto } from '../features/upload/api';
 
 const primaryNav = [
   {
@@ -66,7 +67,7 @@ function NavItem({
       className={({ isActive }) =>
         `flex items-center gap-4 rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
           isActive
-            ? 'bg-blue-100 text-blue-800'
+            ? 'bg-[#e8f0fe] text-[#1a73e8]'
             : 'text-gray-700 hover:bg-gray-100'
         }`
       }
@@ -81,6 +82,24 @@ export function AppLayout() {
   const [searchValue, setSearchValue] = useState('');
   const navigate = useNavigate();
 
+  // Global upload input — always mounted so header + button and UploadButton both work
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const { mutateAsync } = useUploadPhoto();
+  const handleFiles = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      setUploading(true);
+      try {
+        await Promise.all(Array.from(files).map((f) => mutateAsync(f)));
+      } finally {
+        setUploading(false);
+        if (uploadInputRef.current) uploadInputRef.current.value = '';
+      }
+    },
+    [mutateAsync],
+  );
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchValue.trim()) {
@@ -92,8 +111,20 @@ export function AppLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-white">
+      {/* Global hidden upload input — always in DOM */}
+      <input
+        ref={uploadInputRef}
+        id="global-upload-input"
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic"
+        multiple
+        className="hidden"
+        onChange={(e) => handleFiles(e.target.files)}
+        disabled={uploading}
+      />
+
       {/* Sidebar */}
-      <nav className="hidden md:flex flex-col w-64 shrink-0 pt-4 pb-6 px-3 overflow-y-auto">
+      <nav className="hidden md:flex flex-col w-64 shrink-0 pt-4 pb-6 px-3 overflow-y-auto bg-white">
         {/* Logo */}
         <div className="flex items-center gap-2 px-4 mb-4">
           <svg viewBox="0 0 192 192" className="w-8 h-8" xmlns="http://www.w3.org/2000/svg">
@@ -141,7 +172,7 @@ export function AppLayout() {
       </nav>
 
       {/* Right panel: topbar + content */}
-      <div className="flex flex-col flex-1 min-w-0">
+      <div className="flex flex-col flex-1 min-w-0 bg-white">
         {/* Top bar */}
         <header className="flex items-center gap-3 px-4 py-2 shrink-0">
           {/* Search */}
@@ -164,13 +195,21 @@ export function AppLayout() {
           <div className="flex items-center gap-1 ml-auto shrink-0">
             {/* Upload + button */}
             <button
-              className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 text-gray-600"
-              onClick={() => document.getElementById('global-upload-input')?.click()}
+              className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 text-gray-600 disabled:opacity-50"
+              onClick={() => uploadInputRef.current?.click()}
+              disabled={uploading}
               title="Upload photos"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-              </svg>
+              {uploading ? (
+                <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                </svg>
+              )}
             </button>
             {/* Avatar */}
             <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium ml-1">
