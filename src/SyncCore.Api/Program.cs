@@ -9,6 +9,7 @@ using SyncCore.Api.Features.Albums;
 using SyncCore.Api.Features.Photos.Delete;
 using SyncCore.Api.Features.Photos.Favourite;
 using SyncCore.Api.Features.Photos.GetById;
+using SyncCore.Api.Features.Photos.ImageProxy;
 using SyncCore.Api.Features.Photos.List;
 using SyncCore.Api.Features.Photos.Upload;
 using SyncCore.Api.Infrastructure.BackgroundJobs;
@@ -89,6 +90,7 @@ app.MapGet("/healthz", () => Results.Ok(new { status = "healthy", timestamp = Da
 app.MapUploadPhotoEndpoint();
 app.MapGetPhotosEndpoint();
 app.MapGetPhotoByIdEndpoint();
+app.MapImageProxyEndpoints();
 app.MapFavouriteEndpoint();
 app.MapDeletePhotoEndpoints();
 app.MapAlbumEndpoints();

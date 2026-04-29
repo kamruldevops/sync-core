@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { PhotoDto } from './types';
 import { useToggleFavourite } from './api';
+import { apiImageUrl } from '../../api/client';
 
 interface Props {
   photo: PhotoDto;
@@ -14,7 +15,7 @@ export function PhotoThumbnail({ photo, onSelect }: Props) {
     <div className="relative group h-full w-full overflow-hidden bg-gray-100 cursor-pointer">
       <Link to={`/photos/${photo.publicId}`} onClick={() => onSelect?.(photo.publicId)}>
         <img
-          src={photo.thumbUrl}
+          src={apiImageUrl(photo.thumbUrl)}
           alt={photo.fileName}
           className="w-full h-full object-cover transition-opacity group-hover:opacity-90"
           loading="lazy"

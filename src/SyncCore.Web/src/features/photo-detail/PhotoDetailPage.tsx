@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePhoto, useSoftDeletePhoto, useToggleFavourite } from '../gallery/api';
+import { apiImageUrl } from '../../api/client';
 import { format } from 'date-fns';
 
 export function PhotoDetailPage() {
@@ -32,7 +33,7 @@ export function PhotoDetailPage() {
       {/* Image */}
       <div className="flex-1 flex items-center justify-center bg-black">
         <img
-          src={photo.previewUrl}
+          src={apiImageUrl(photo.previewUrl)}
           alt={photo.fileName}
           className="max-h-screen max-w-full object-contain"
         />

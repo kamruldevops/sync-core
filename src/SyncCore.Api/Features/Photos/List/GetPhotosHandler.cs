@@ -1,19 +1,13 @@
 using System.Text;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using SyncCore.Api.Common.Options;
-using SyncCore.Api.Infrastructure.BlobStorage;
 using SyncCore.Api.Infrastructure.Data;
 
 namespace SyncCore.Api.Features.Photos.List;
 
 public class GetPhotosHandler(
-    IPhotoDbContext db,
-    IBlobStorageService blobStorage,
-    IOptions<BlobStorageOptions> opts) : IRequestHandler<GetPhotosQuery, GetPhotosResult>
+    IPhotoDbContext db) : IRequestHandler<GetPhotosQuery, GetPhotosResult>
 {
-    private static readonly TimeSpan SasValidity = TimeSpan.FromMinutes(15);
 
     public async Task<GetPhotosResult> Handle(GetPhotosQuery request, CancellationToken cancellationToken)
     {
@@ -61,12 +55,8 @@ public class GetPhotosHandler(
             p.PublicId,
             p.FileName,
             p.TakenAt,
-            p.ThumbnailPath != null
-                ? blobStorage.GenerateSasUri(opts.Value.ThumbnailContainer, p.ThumbnailPath, SasValidity).ToString()
-                : string.Empty,
-            p.PreviewPath != null
-                ? blobStorage.GenerateSasUri(opts.Value.ThumbnailContainer, p.PreviewPath, SasValidity).ToString()
-                : string.Empty,
+            p.ThumbnailPath != null ? $"/photos/{p.PublicId}/thumb" : string.Empty,
+            p.PreviewPath   != null ? $"/photos/{p.PublicId}/preview" : string.Empty,
             p.IsFavourite,
             p.DeletedAt
         )).ToList();

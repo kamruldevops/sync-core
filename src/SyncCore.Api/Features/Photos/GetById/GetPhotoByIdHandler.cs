@@ -23,10 +23,10 @@ public class GetPhotoByIdHandler(
         if (photo is null) return null;
 
         var previewUrl = photo.PreviewPath != null
-            ? blobStorage.GenerateSasUri(opts.Value.ThumbnailContainer, photo.PreviewPath, TimeSpan.FromMinutes(15)).ToString()
+            ? $"/photos/{photo.PublicId}/preview"
             : string.Empty;
 
-        var originalUrl = blobStorage.GenerateSasUri(opts.Value.OriginalContainer, photo.BlobPath, TimeSpan.FromMinutes(5)).ToString();
+        var originalUrl = blobStorage.GenerateSasUri(opts.Value.OriginalContainer, photo.BlobPath, TimeSpan.FromMinutes(30)).ToString();
 
         var albumIds = photo.AlbumPhotos
             .Select(ap => ap.AlbumId.ToString())
