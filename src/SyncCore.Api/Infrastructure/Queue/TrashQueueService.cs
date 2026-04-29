@@ -34,11 +34,15 @@ public class TrashQueueService(IOptions<BlobStorageOptions> opts, ILogger<TrashQ
         // Base64-encode as Azure Storage Queue requires base64 for binary-safe transport
         var encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
 
-        // Initial visibility = min(30 days, 7 days) = 7 days
+        // Initial visibility = min(30 days, 7 days) = 7 days (Azure max per send)
         var initialVisibility = TimeSpan.FromDays(Math.Min(RetentionPeriod.TotalDays, MaxVisibility.TotalDays));
 
+        // TTL must be strictly greater than visibilityTimeout.
+        // Azure SDK 12.x (API 2020-10-02+) supports TTL beyond 7 days — use 35 days.
+        var timeToLive = TimeSpan.FromDays(35);
+
         var client = await GetClientAsync(ct);
-        await client.SendMessageAsync(encoded, visibilityTimeout: initialVisibility, cancellationToken: ct);
+        await client.SendMessageAsync(encoded, visibilityTimeout: initialVisibility, timeToLive: timeToLive, cancellationToken: ct);
 
         logger.LogInformation("Enqueued trash deletion for photo {PublicId}, due at {DeletionDueAt}", publicId, deletionDueAt);
     }
