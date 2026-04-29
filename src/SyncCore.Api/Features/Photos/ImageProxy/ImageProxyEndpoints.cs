@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SyncCore.Api.Common.Options;
@@ -28,19 +27,31 @@ public static class ImageProxyEndpoints
         IBlobStorageService blobStorage,
         IOptions<BlobStorageOptions> opts,
         ClaimsPrincipal user,
+        HttpRequest request,
         HttpResponse response,
         CancellationToken ct)
     {
         var userId = CurrentUser.GetUserId(user);
-        var photo = await db.Photos
+        var blobPath = await db.Photos
             .Where(p => p.PublicId == publicId && p.UserId == userId && !p.IsDeleted && p.ThumbnailPath != null)
             .Select(p => p.ThumbnailPath)
             .FirstOrDefaultAsync(ct);
 
-        if (photo is null) return Results.NotFound();
+        if (blobPath is null) return Results.NotFound();
 
-        response.Headers["Cache-Control"] = "public, max-age=86400, immutable";
-        var stream = await blobStorage.OpenReadAsync(opts.Value.ThumbnailContainer, photo, ct);
+        // Use publicId as ETag — thumbnails are immutable once generated
+        var etag = $"\"{publicId}-thumb\"";
+        if (request.Headers.IfNoneMatch == etag)
+        {
+            response.Headers.ETag = etag;
+            return Results.StatusCode(304);
+        }
+
+        // private: only the user's browser may cache (not CDNs/proxies) — matches Google Photos behaviour
+        response.Headers.CacheControl = "private, max-age=86400";
+        response.Headers.ETag = etag;
+
+        var stream = await blobStorage.OpenReadAsync(opts.Value.ThumbnailContainer, blobPath, ct);
         return Results.Stream(stream, "image/webp");
     }
 
@@ -50,19 +61,29 @@ public static class ImageProxyEndpoints
         IBlobStorageService blobStorage,
         IOptions<BlobStorageOptions> opts,
         ClaimsPrincipal user,
+        HttpRequest request,
         HttpResponse response,
         CancellationToken ct)
     {
         var userId = CurrentUser.GetUserId(user);
-        var photo = await db.Photos
+        var blobPath = await db.Photos
             .Where(p => p.PublicId == publicId && p.UserId == userId && !p.IsDeleted && p.PreviewPath != null)
             .Select(p => p.PreviewPath)
             .FirstOrDefaultAsync(ct);
 
-        if (photo is null) return Results.NotFound();
+        if (blobPath is null) return Results.NotFound();
 
-        response.Headers["Cache-Control"] = "public, max-age=86400, immutable";
-        var stream = await blobStorage.OpenReadAsync(opts.Value.ThumbnailContainer, photo, ct);
+        var etag = $"\"{publicId}-preview\"";
+        if (request.Headers.IfNoneMatch == etag)
+        {
+            response.Headers.ETag = etag;
+            return Results.StatusCode(304);
+        }
+
+        response.Headers.CacheControl = "private, max-age=86400";
+        response.Headers.ETag = etag;
+
+        var stream = await blobStorage.OpenReadAsync(opts.Value.ThumbnailContainer, blobPath, ct);
         return Results.Stream(stream, "image/webp");
     }
 }
