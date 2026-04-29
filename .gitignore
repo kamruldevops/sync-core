@@ -1,0 +1,35 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+**/appsettings.Development.json
+**/appsettings.Production.json
+*.pfx
+*.snk
+
+# EF Core migrations SQLite snapshot (not needed for Postgres)
+# keep Migrations/ folder
+
+# Node / frontend
+node_modules/
+dist/
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Rider / VS Code
+.idea/
+*.iml
+.vscode/
+!.vscode/extensions.json

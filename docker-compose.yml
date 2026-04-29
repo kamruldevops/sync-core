@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: synccore
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./src/SyncCore.Api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5001:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=synccore;Username=postgres;Password=postgres"
+      AzureBlobStorage__ConnectionString: "${AZURE_BLOB_CONNECTION_STRING}"
+      AzureAdB2C__Instance: "${B2C_INSTANCE}"
+      AzureAdB2C__ClientId: "${B2C_CLIENT_ID}"
+      AzureAdB2C__Domain: "${B2C_DOMAIN}"
+      AzureAdB2C__SignUpSignInPolicyId: "B2C_1_signupsignin"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
