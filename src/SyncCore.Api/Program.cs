@@ -38,33 +38,19 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Progr
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
 
-// --- Authentication (Azure AD B2C) ---
-var b2cClientId = builder.Configuration["AzureAdB2C:ClientId"];
-var b2cConfigured = !string.IsNullOrWhiteSpace(b2cClientId);
+// --- Authentication: disabled until B2C is configured ---
+// Use a permissive anonymous scheme so .RequireAuthorization() on endpoints
+// doesn't throw when B2C is not yet wired up.
+builder.Services.AddAuthentication("NoAuth")
+    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions,
+               SyncCore.Api.Infrastructure.Auth.NoAuthHandler>("NoAuth", _ => { });
+builder.Services.AddAuthorization();
 
-if (b2cConfigured)
-{
-    builder.Services
-        .AddMicrosoftIdentityWebApiAuthentication(builder.Configuration, "AzureAdB2C");
-}
-else
-{
-    builder.Services.AddAuthentication();
-}
-
-// --- Authorization — require auth by default (relaxed when B2C not configured) ---
-var authBuilder = builder.Services.AddAuthorizationBuilder();
-if (b2cConfigured)
-{
-    authBuilder.SetFallbackPolicy(new AuthorizationPolicyBuilder()
-        .RequireAuthenticatedUser()
-        .Build());
-}
-
-// --- CORS for local Vite dev server ---
+// --- CORS: allow all localhost origins (dev) ---
 builder.Services.AddCors(options =>
     options.AddPolicy("ViteDev", policy =>
-        policy.WithOrigins("http://localhost:5173")
+        policy.SetIsOriginAllowed(origin =>
+                   new Uri(origin).Host == "localhost")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials()));

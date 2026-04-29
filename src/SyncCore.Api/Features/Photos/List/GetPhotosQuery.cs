@@ -13,7 +13,7 @@ public record GetPhotosQuery(
     bool IncludeTrashed = false
 ) : IRequest<GetPhotosResult>;
 
-public record GetPhotosResult(IReadOnlyList<PhotoDto> Photos, string? NextCursor);
+public record GetPhotosResult(IReadOnlyList<PhotoDto> Items, string? NextCursor);
 
 public record PhotoDto(
     string PublicId,

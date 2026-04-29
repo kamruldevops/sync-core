@@ -1,5 +1,4 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { useMsal } from '@azure/msal-react';
 
 const navItems = [
   { to: '/', label: 'Photos', icon: '🖼' },
@@ -9,8 +8,6 @@ const navItems = [
 ];
 
 export function AppLayout() {
-  const { instance, accounts } = useMsal();
-  const user = accounts[0];
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -33,13 +30,7 @@ export function AppLayout() {
           </NavLink>
         ))}
         <div className="mt-auto pt-4 border-t border-gray-100">
-          <p className="text-xs text-gray-500 px-2 truncate">{user?.username}</p>
-          <button
-            onClick={() => instance.logoutRedirect()}
-            className="mt-2 w-full rounded-lg px-3 py-2 text-sm text-left text-gray-600 hover:bg-gray-50"
-          >
-            Sign out
-          </button>
+          <p className="text-xs text-gray-500 px-2 truncate">local-dev-user</p>
         </div>
       </nav>
 

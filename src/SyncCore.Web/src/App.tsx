@@ -1,8 +1,5 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { MsalProvider } from '@azure/msal-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { msalInstance } from './auth/msalInstance';
-import { RequireAuth } from './auth/RequireAuth';
 import { AppLayout } from './components/AppLayout';
 import { GalleryPage } from './features/gallery/GalleryPage';
 import { PhotoDetailPage } from './features/photo-detail/PhotoDetailPage';
@@ -19,11 +16,9 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: (
-      <RequireAuth>
-        <DropZone>
-          <AppLayout />
-        </DropZone>
-      </RequireAuth>
+      <DropZone>
+        <AppLayout />
+      </DropZone>
     ),
     children: [
       { index: true, element: <GalleryPage /> },
@@ -38,10 +33,8 @@ const router = createBrowserRouter([
 
 export default function App() {
   return (
-    <MsalProvider instance={msalInstance}>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
-    </MsalProvider>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   );
 }
