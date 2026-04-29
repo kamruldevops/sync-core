@@ -4,13 +4,14 @@ using Microsoft.Extensions.Options;
 using SyncCore.Api.Common.Options;
 using SyncCore.Api.Infrastructure.BlobStorage;
 using SyncCore.Api.Infrastructure.Data;
+using SyncCore.Api.Infrastructure.Queue;
 
 namespace SyncCore.Api.Features.Photos.Delete;
 
 // --- Soft delete ---
 public record DeletePhotoCommand(string PublicId, string UserId) : IRequest;
 
-public class DeletePhotoHandler(IPhotoDbContext db) : IRequestHandler<DeletePhotoCommand>
+public class DeletePhotoHandler(IPhotoDbContext db, ITrashQueueService trashQueue) : IRequestHandler<DeletePhotoCommand>
 {
     public async Task Handle(DeletePhotoCommand request, CancellationToken cancellationToken)
     {
@@ -23,6 +24,9 @@ public class DeletePhotoHandler(IPhotoDbContext db) : IRequestHandler<DeletePhot
         photo.IsDeleted = true;
         photo.DeletedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
+
+        // Enqueue deferred blob deletion — worker will permanently delete after 30 days
+        await trashQueue.EnqueueAsync(request.PublicId, request.UserId, cancellationToken);
     }
 }
 

@@ -1,6 +1,6 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { usePhotos } from './api';
+import { usePhotos, useBulkDeletePhotos } from './api';
 import type { PhotoDto } from './types';
 import { PhotoThumbnail } from './PhotoThumbnail';
 import { UploadButton } from '../upload/UploadButton';
@@ -76,6 +76,26 @@ export function GalleryPage({ favouritesOnly }: Props) {
     q: searchTerm,
   });
 
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const { mutate: bulkDelete, isPending: isDeleting } = useBulkDeletePhotos();
+
+  const selecting = selected.size > 0;
+
+  const toggleSelect = (publicId: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(publicId) ? next.delete(publicId) : next.add(publicId);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelected(new Set());
+
+  const handleDelete = () => {
+    const ids = Array.from(selected);
+    bulkDelete(ids, { onSuccess: clearSelection });
+  };
+
   const observer = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -109,6 +129,40 @@ export function GalleryPage({ favouritesOnly }: Props) {
 
   return (
     <div className="px-4 pt-2 pb-8">
+      {/* Selection bar — fixed at top when photos are selected */}
+      {selecting && (
+        <div className="fixed top-0 left-0 right-0 z-50 flex items-center gap-3 px-4 py-3 bg-white shadow-md border-b border-gray-200">
+          <button
+            onClick={clearSelection}
+            className="p-1 rounded-full hover:bg-gray-100"
+            title="Cancel selection"
+          >
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <span className="text-sm font-medium text-gray-700 flex-1">
+            {selected.size} selected
+          </span>
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium text-white bg-[#1a73e8] hover:bg-[#1765cc] disabled:opacity-50 transition-colors"
+          >
+            {isDeleting ? (
+              <span className="animate-spin inline-block h-4 w-4 border-b-2 border-white rounded-full" />
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            )}
+            Move to trash
+          </button>
+        </div>
+      )}
+      {/* Spacer when selection bar is visible */}
+      {selecting && <div className="h-14" />}
+
       {searchTerm && (
         <p className="text-sm text-gray-500 mb-3">
           Results for <span className="font-medium text-gray-700">"{searchTerm}"</span>
@@ -128,7 +182,12 @@ export function GalleryPage({ favouritesOnly }: Props) {
                 className="h-52 flex-grow overflow-hidden bg-gray-100"
                 style={{ flexBasis: '180px', maxWidth: '480px' }}
               >
-                <PhotoThumbnail photo={photo} />
+                <PhotoThumbnail
+                  photo={photo}
+                  selected={selected.has(photo.publicId)}
+                  selecting={selecting}
+                  onToggleSelect={toggleSelect}
+                />
               </div>
             ))}
             {/* Invisible spacer so last row items don't stretch too wide */}

@@ -6,4 +6,5 @@ public class BlobStorageOptions
     public string ConnectionString { get; set; } = default!;
     public string OriginalContainer { get; set; } = "photos-original";
     public string ThumbnailContainer { get; set; } = "photos-thumbnails";
+    public string TrashQueueName { get; set; } = "photos-trash";
 }

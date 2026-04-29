@@ -60,6 +60,15 @@ export function useSoftDeletePhoto() {
   });
 }
 
+export function useBulkDeletePhotos() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (publicIds: string[]) =>
+      Promise.all(publicIds.map((id) => apiClient.delete(`/photos/${id}`))),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['photos'] }),
+  });
+}
+
 export function useRestorePhoto() {
   const qc = useQueryClient();
   return useMutation({

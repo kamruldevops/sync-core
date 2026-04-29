@@ -15,6 +15,7 @@ using SyncCore.Api.Features.Photos.Upload;
 using SyncCore.Api.Infrastructure.BackgroundJobs;
 using SyncCore.Api.Infrastructure.BlobStorage;
 using SyncCore.Api.Infrastructure.Data;
+using SyncCore.Api.Infrastructure.Queue;
 using SyncCore.Api.Infrastructure.Thumbnails;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +32,7 @@ builder.Services.AddScoped<IPhotoDbContext>(sp => sp.GetRequiredService<PhotoDbC
 // --- Infrastructure services ---
 builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
 builder.Services.AddScoped<IThumbnailService, ThumbnailService>();
+builder.Services.AddScoped<ITrashQueueService, TrashQueueService>();
 
 // --- MediatR ---
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
